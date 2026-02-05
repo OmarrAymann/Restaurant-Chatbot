@@ -1,4 +1,4 @@
-#  restaurant ai ordering agent  
+#  Restaurant Ordering Agent  
 **tool-driven conversational system using mcp + dspy react**
 
 an interactive restaurant assistant that talks to customers, understands intent, manages orders, notifies the kitchen, and stores everything in structured records.  
