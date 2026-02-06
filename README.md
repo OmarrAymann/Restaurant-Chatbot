@@ -38,41 +38,15 @@ The MCP Server acts as a bridge between the AI agent and backend services (tools
 ### Configuration:
 - Python executable (`sys.executable`) is used to launch MCP server
 - `.env` file stores credentials and configuration variables:
-SENDER_EMAIL=youremail@example.com
-SENDER_PASSWORD=yourpassword
-CHEF_EMAIL=chef@restaurant.com
+- SENDER_EMAIL=youremail@example.com
+- SENDER_PASSWORD=yourpassword
+- CHEF_EMAIL=chef@restaurant.com
 
-text
+## 🏗️ Architecture
 
-## Architecture
-+---------------------+
-| Customer |
-| (Chat Interface) |
-+----------+----------+
-|
-v
-+---------------------+
-| AI Conversational |
-| Agent (Llama 3.2) |
-+----------+----------+
-|
-v
-+---------------------+
-| MCP Server |
-| - Email Tool |
-| - Logging Tool |
-+----------+----------+
-|
-v
-+---------------------+
-| Kitchen / Database |
-+---------------------+
+**Flow:** User → Agent → MCP → Kitchen / Logging System
 
-text
-
-**Flow:** User sends messages → AI agent interprets → MCP server executes tools → Kitchen/log updated.
-
-## Sample Menu (Egyptian Cuisine)
+## Sample Menu 
 
 | Item Code | Name                  | Category | Description                                      | Price   |
 |-----------|-----------------------|----------|--------------------------------------------------|---------|
@@ -104,30 +78,4 @@ Restaurant-Ordering-Agent-using-mcp-dspy-react/
 ├── test.py # Test scripts and examples
 └── README.md # Project documentation
 
-text
 
-## Getting Started
-
-### Install Dependencies
-
-```bash
-pip install -r Requirements.txt
-Setup Environment Variables
-Create a .env file with the required credentials:
-
-bash
-SENDER_EMAIL=youremail@example.com
-SENDER_PASSWORD=yourpassword
-CHEF_EMAIL=chef@restaurant.com
-Start MCP Server
-bash
-python3 mcp_server_res.py
-Run Chatbot
-bash
-python3 Agent.py
-Interact with Chatbot
-Type menu to view menu
-
-Type orders naturally: "I want 2 Falafel and 1 Basbousa"
-
-Type quit to exit
