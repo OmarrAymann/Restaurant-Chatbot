@@ -1,6 +1,7 @@
 import asyncio
 import os
-from typing import List, Optional, Literal
+import sys
+from typing import List, Optional
 
 import dspy
 import dotenv
@@ -18,10 +19,10 @@ language_model = dspy.LM(
 )
 dspy.configure(lm=language_model)
 
-# MCP Server Configuration
+# MCP Server Configuration - Using python3 for macOS
 mcp_server_parameters = StdioServerParameters(
-    command="python",
-    args=["restaurant_mcp_server_enhanced.py"],
+    command=sys.executable,  # Uses the same Python interpreter running this script
+    args=["mcp_server_res.py"],
     env=None,
 )
 

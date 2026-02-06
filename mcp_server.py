@@ -26,49 +26,16 @@ TAX_RATE = 0.10
 class MenuItemModel(BaseModel):
     """Represents a single item on the restaurant menu."""
     
-    item_code: str = Field(description="Unique identifier for the menu item")
-    dish_name: str = Field(description="Display name of the dish")
-    category_type: str = Field(description="Menu category")
-    detailed_description: str = Field(description="Detailed description of the dish")
-    base_price: float = Field(description="Price in USD")
-    ingredient_list: List[str] = Field(description="List of primary ingredients")
-    dietary_labels: List[str] = Field(description="Dietary tags")
-    is_available: bool = Field(description="Current availability status")
-    prep_time_minutes: int = Field(description="Estimated preparation time")
-    popularity_rating: int = Field(description="Popularity score (1-10)")
-
-
-class OrderLineItem(BaseModel):
-    """Represents a single item within an order."""
-    
-    item_code: str = Field(description="Menu item identifier")
-    dish_name: str = Field(description="Name of the ordered dish")
-    quantity_ordered: int = Field(default=1, description="Number of servings")
-    special_instructions: Optional[str] = Field(default=None, description="Custom requests")
-    unit_price: float = Field(description="Price per unit")
-
-
-class CustomerInformation(BaseModel):
-    """Customer contact and identification details."""
-    
-    full_name: str = Field(description="Customer's full name")
-    table_or_room_number: int = Field(description="Table or room number")
-    phone_number: str = Field(description="Contact phone number")
-    email_address: Optional[str] = Field(default=None, description="Email for receipts")
-
-
-class CompleteOrder(BaseModel):
-    """Complete order structure with all details."""
-    
-    order_identifier: str = Field(description="Unique order ID")
-    customer_info: CustomerInformation = Field(description="Customer details")
-    line_items: List[OrderLineItem] = Field(description="Ordered items")
-    subtotal_amount: float = Field(description="Pre-tax total")
-    tax_amount: float = Field(description="Calculated tax")
-    grand_total: float = Field(description="Final total including tax")
-    additional_notes: Optional[str] = Field(default=None, description="Order-level notes")
-    order_timestamp: str = Field(description="ISO format timestamp")
-    order_status: str = Field(description="Current order status")
+    item_code: str
+    dish_name: str
+    category_type: str
+    detailed_description: str
+    base_price: float
+    ingredient_list: List[str]
+    dietary_labels: List[str]
+    is_available: bool
+    prep_time_minutes: int
+    popularity_rating: int
 
 
 RESTAURANT_MENU_DATABASE: Dict[str, MenuItemModel] = {
@@ -207,16 +174,8 @@ active_orders_database: Dict[str, Dict[str, Any]] = {}
 
 
 @restaurant_service.tool()
-def fetch_menu(category_filter: str = "all") -> List[MenuItemModel] | str:
-    """
-    Retrieve menu items by category.
-    
-    Args:
-        category_filter: Category to filter by (appetizer, main, dessert, drink, all)
-        
-    Returns:
-        List of menu items or error message
-    """
+def fetch_menu(category_filter: str = "all"):
+    """Retrieve menu items by category."""
     normalized_category = category_filter.lower().strip()
     
     if normalized_category == "all":
@@ -228,29 +187,21 @@ def fetch_menu(category_filter: str = "all") -> List[MenuItemModel] | str:
     ]
     
     if not filtered_items:
-        return f"No menu items found in category: {category_filter}. Available categories: appetizer, main, dessert, drink, all"
+        return f"No menu items found in category: {category_filter}"
     
     return filtered_items
 
 
 @restaurant_service.tool()
 def calculate_order_total(item_codes: List[str]) -> Dict[str, float]:
-    """
-    Calculate the total cost for a list of menu items including tax.
-    
-    Args:
-        item_codes: List of menu item codes
-        
-    Returns:
-        Dictionary with subtotal, tax, and grand total
-    """
+    """Calculate the total cost for a list of menu items including tax."""
     subtotal = 0.0
     
     for item_code in item_codes:
         normalized_code = item_code.upper().strip()
         
         if normalized_code not in RESTAURANT_MENU_DATABASE:
-            raise ValueError(f"Menu item '{item_code}' not found. Please use valid item codes.")
+            raise ValueError(f"Menu item '{item_code}' not found.")
         
         subtotal += RESTAURANT_MENU_DATABASE[normalized_code].base_price
     
@@ -272,29 +223,14 @@ def create_new_order(
     item_codes: List[str],
     customer_email: Optional[str] = None
 ) -> Dict[str, Any]:
-    """
-    Create a new order and save it to the system.
-    
-    Args:
-        customer_name: Full name of the customer
-        service_location: Table number or delivery location
-        contact_phone: Customer's phone number
-        item_codes: List of menu item codes to order
-        customer_email: Optional email for receipt
-        
-    Returns:
-        Dictionary with success status, order ID, and order details
-    """
+    """Create a new order and save it to the system."""
     order_number = len(active_orders_database) + 1
     order_id = f"ORD-{order_number:05d}"
     
     for item_code in item_codes:
         normalized_code = item_code.upper().strip()
         if normalized_code not in RESTAURANT_MENU_DATABASE:
-            return {
-                "success": False,
-                "error": f"Invalid menu item: '{item_code}'. Please check the menu."
-            }
+            return {"success": False, "error": f"Invalid menu item: '{item_code}'"}
     
     pricing_data = calculate_order_total(item_codes)
     
@@ -317,31 +253,16 @@ def create_new_order(
     return {
         "success": True,
         "order_id": order_id,
-        "message": f"Order successfully created for {customer_name} at {service_location}",
+        "message": f"Order created for {customer_name} at {service_location}",
         "order_details": new_order
     }
 
 
 @restaurant_service.tool()
-def send_order_to_kitchen(
-    order_id: str,
-    chef_email: str = DEFAULT_CHEF_EMAIL
-) -> Dict[str, Any]:
-    """
-    Send order details to the kitchen via email notification.
-    
-    Args:
-        order_id: The unique order identifier
-        chef_email: Email address of the kitchen/chef
-        
-    Returns:
-        Dictionary with success status and details
-    """
+def send_order_to_kitchen(order_id: str, chef_email: str = DEFAULT_CHEF_EMAIL) -> Dict[str, Any]:
+    """Send order details to the kitchen via email."""
     if order_id not in active_orders_database:
-        return {
-            "success": False,
-            "error": f"Order {order_id} not found in system"
-        }
+        return {"success": False, "error": f"Order {order_id} not found"}
     
     order_data = active_orders_database[order_id]
     
@@ -378,8 +299,6 @@ Subtotal:        ${order_data['subtotal']:.2f}
 Tax (10%):       ${order_data['tax']:.2f}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 GRAND TOTAL:     ${order_data['grand_total']:.2f}
-
-⚡ Please prepare this order with priority.
     """
     
     try:
@@ -397,17 +316,15 @@ GRAND TOTAL:     ${order_data['grand_total']:.2f}
         
         return {
             "success": True,
-            "message": f"Order {order_id} successfully sent to kitchen",
-            "email_recipient": chef_email,
-            "order_summary": email_body
+            "message": f"Order {order_id} sent to kitchen",
+            "email_recipient": chef_email
         }
     
     except Exception as error:
         return {
             "success": False,
             "error": f"Failed to send email: {str(error)}",
-            "order_summary": email_body,
-            "note": "Order saved but email notification failed."
+            "note": "Order saved but email failed"
         }
 
 
@@ -419,19 +336,7 @@ def save_order_to_excel(
     service_location: str,
     item_codes: List[str]
 ) -> Dict[str, Any]:
-    """
-    Save order details to an Excel file for record-keeping.
-    
-    Args:
-        order_id: Unique order identifier
-        customer_name: Customer's full name
-        contact_phone: Phone number
-        service_location: Table/room number
-        item_codes: List of ordered item codes
-        
-    Returns:
-        Dictionary with success status and file path
-    """
+    """Save order details to Excel file."""
     try:
         if os.path.exists(ORDERS_EXCEL_FILE):
             workbook = openpyxl.load_workbook(ORDERS_EXCEL_FILE)
@@ -447,12 +352,10 @@ def save_order_to_excel(
             
             header_fill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
             header_font = Font(bold=True, color="FFFFFF", size=11)
-            header_alignment = Alignment(horizontal="center", vertical="center")
             
             for cell in worksheet[1]:
                 cell.fill = header_fill
                 cell.font = header_font
-                cell.alignment = header_alignment
         
         items_display = ", ".join([
             RESTAURANT_MENU_DATABASE[code].dish_name 
@@ -473,15 +376,11 @@ def save_order_to_excel(
         ]
         worksheet.append(new_row)
         
-        column_widths = [15, 20, 25, 18, 15, 50, 15]
-        for idx, width in enumerate(column_widths, start=1):
-            worksheet.column_dimensions[openpyxl.utils.get_column_letter(idx)].width = width
-        
         workbook.save(ORDERS_EXCEL_FILE)
         
         return {
             "success": True,
-            "message": f"Order {order_id} saved to Excel log",
+            "message": f"Order {order_id} saved to Excel",
             "file_path": ORDERS_EXCEL_FILE
         }
     
@@ -494,20 +393,9 @@ def save_order_to_excel(
 
 @restaurant_service.tool()
 def get_order_status(order_id: str) -> Dict[str, Any]:
-    """
-    Retrieve the current status and details of an order.
-    
-    Args:
-        order_id: The unique order identifier
-        
-    Returns:
-        Order details or error message
-    """
+    """Retrieve order status and details."""
     if order_id not in active_orders_database:
-        return {
-            "success": False,
-            "error": f"Order {order_id} not found"
-        }
+        return {"success": False, "error": f"Order {order_id} not found"}
     
     return {
         "success": True,
@@ -516,5 +404,5 @@ def get_order_status(order_id: str) -> Dict[str, Any]:
 
 
 if __name__ == "__main__":
-    print("🚀 Starting Enhanced Restaurant MCP Server...")
+    print("🚀 Starting Restaurant MCP Server...")
     restaurant_service.run()
