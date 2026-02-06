@@ -1,16 +1,11 @@
-import asyncio
-import os
 from typing import List, Optional, Dict, Any
-from datetime import datetime
-import sys
-
 import dspy
 import dotenv
 from pydantic import BaseModel, Field
 
 dotenv.load_dotenv()
 
-# Language Model Configuration - Ollama Llama 3.2
+
 language_model = dspy.LM(
     model="ollama/llama3.2:latest",
     api_base="http://localhost:11434",
@@ -25,65 +20,65 @@ dspy.configure(lm=language_model)
 
 RESTAURANT_MENU = {
     "APP_001": {
-        "name": "Mediterranean Bruschetta",
+        "name": "Falafel",
         "category": "appetizer",
-        "description": "Artisan sourdough topped with heirloom tomatoes, fresh basil, and aged balsamic",
-        "price": 9.99,
-        "ingredients": ["sourdough bread", "tomatoes", "basil", "garlic", "balsamic vinegar"],
-        "dietary": ["vegetarian"],
-        "prep_time": 10
+        "description": "Crispy chickpea balls served with tahini sauce and pickles",
+        "price": 10,
+        "ingredients": ["chickpeas", "onion", "garlic", "parsley", "tahini"],
+        "dietary": ["vegetarian", "vegan"],
+        "prep_time": 12
     },
     "APP_002": {
-        "name": "Crispy Buffalo Wings",
+        "name": "fatosh Salad",
         "category": "appetizer",
-        "description": "Double-fried chicken wings with buffalo sauce and blue cheese dip",
-        "price": 13.99,
-        "ingredients": ["chicken wings", "buffalo sauce", "celery", "blue cheese"],
-        "dietary": ["spicy"],
-        "prep_time": 18
+        "description": "Fresh mixed greens with tomatoes, cucumbers, radishes, and crispy pita chips",
+        "price": 68,
+        "ingredients": ["mixed greens", "tomatoes", "cucumber", "radishes", "pita chips"],
+        "dietary": ["vegetarian", "spicy"],
+        "prep_time": 15
     },
     "MAIN_001": {
-        "name": "Pan-Seared Atlantic Salmon",
+        "name": "Grilled Kofta",
         "category": "main",
-        "description": "Wild-caught salmon with lemon butter sauce and vegetables",
-        "price": 26.99,
-        "ingredients": ["salmon", "lemon", "butter", "asparagus", "potatoes"],
-        "dietary": ["gluten-free", "pescatarian"],
+        "description": "Seasoned minced beef and lamb skewers with rice and vegetables",
+        "price": 170,
+        "ingredients": ["beef", "lamb", "onion", "spices", "rice", "vegetables"],
+        "dietary": [],
         "prep_time": 25
     },
     "MAIN_002": {
-        "name": "Classic Fettuccine Alfredo",
+        "name": "Molokhia with Rabbit",
         "category": "main",
-        "description": "Handmade fettuccine with grilled herb chicken breast",
-        "price": 19.99,
-        "ingredients": ["fettuccine", "chicken", "cream", "parmesan"],
+        "description": "Traditional molokhia stew served with tender rabbit and rice",
+        "price": 150,
+        "ingredients": ["molokhia leaves", "rabbit", "garlic", "coriander", "rice"],
         "dietary": [],
-        "prep_time": 22
-    },
-    "MAIN_003": {
-        "name": "Angus Ribeye Steak",
-        "category": "main",
-        "description": "12oz USDA Prime ribeye with mashed potatoes and vegetables",
-        "price": 34.99,
-        "ingredients": ["ribeye", "potatoes", "broccolini"],
-        "dietary": ["gluten-free"],
         "prep_time": 30
     },
+    "MAIN_003": {
+        "name": "Hamam Mahshi",
+        "category": "main",
+        "description": "Stuffed pigeon grilled to perfection with Egyptian spices",
+        "price": 120,
+        "ingredients": ["pigeon", "rice", "onion", "spices", "butter"],
+        "dietary": [],
+        "prep_time": 35
+    },
     "DESS_001": {
-        "name": "Molten Chocolate Lava Cake",
+        "name": "Basbousa",
         "category": "dessert",
-        "description": "Warm chocolate cake with vanilla ice cream",
-        "price": 9.99,
-        "ingredients": ["chocolate", "flour", "eggs", "ice cream"],
+        "description": "Sweet semolina cake topped with almonds and soaked in syrup",
+        "price": 30,
+        "ingredients": ["semolina", "sugar", "yogurt", "almonds", "syrup"],
         "dietary": ["vegetarian"],
-        "prep_time": 14
+        "prep_time": 20
     },
     "DRINK_001": {
-        "name": "Fresh-Squeezed Lemonade",
+        "name": "Karkadeh",
         "category": "drink",
-        "description": "House-made lemonade with fresh mint",
-        "price": 4.99,
-        "ingredients": ["lemons", "sugar", "mint"],
+        "description": "Refreshing hibiscus tea served hot or cold",
+        "price": 10,
+        "ingredients": ["hibiscus petals", "sugar", "water"],
         "dietary": ["vegan", "vegetarian"],
         "prep_time": 5
     },
@@ -98,12 +93,11 @@ TAX_RATE = 0.10
 # ============================================================================
 
 def get_menu_display(category: str = "all") -> str:
-    """Get formatted menu display."""
     if category == "all":
+
         items = RESTAURANT_MENU.values()
     else:
         items = [item for item in RESTAURANT_MENU.values() if item["category"] == category]
-    
     output = []
     for code, item in RESTAURANT_MENU.items():
         if category == "all" or item["category"] == category:
@@ -113,7 +107,6 @@ def get_menu_display(category: str = "all") -> str:
 
 
 def calculate_total(item_codes: List[str]) -> Dict[str, float]:
-    """Calculate order total."""
     subtotal = sum(RESTAURANT_MENU[code]["price"] for code in item_codes if code in RESTAURANT_MENU)
     tax = subtotal * TAX_RATE
     total = subtotal + tax
@@ -135,7 +128,6 @@ class CustomerOrderDetails(BaseModel):
 
 
 class AgentResponseOutput(BaseModel):
-    """Agent response structure."""
     agent_message: str
     conversation_state: str
     order_details: CustomerOrderDetails
@@ -145,7 +137,6 @@ class AgentResponseOutput(BaseModel):
 
 
 class RestaurantAgent(dspy.Signature):
-    """Restaurant ordering agent that helps customers place orders."""
     
     user_input_message: str = dspy.InputField(desc="Customer's message")
     conversation_history: str = dspy.InputField(desc="Chat history")
@@ -264,21 +255,15 @@ class ChatSession:
 # ============================================================================
 
 def main():
-    """Main application entry point."""
-    print("🚀 Starting Restaurant Order Assistant...")
-    print("\n" + "=" * 60)
-    print("🍽️  RESTAURANT ORDER ASSISTANT")
-    print("=" * 60)
-    print("Welcome! I'm here to help you place your order.")
-    print("Type 'quit', 'exit', or 'bye' to end the conversation.")
-    print("=" * 60 + "\n")
-    
+
+    print("RESTAURANT ORDER ASSISTANT :")
+    print("\n Hello how can i help you today? \n")
+
     session = ChatSession()
     
     while True:
         try:
             user_input = input("You: ").strip()
-            
             if user_input.lower() in ['quit', 'exit', 'bye', 'goodbye']:
                 print("\n🙏 Thank you for visiting! Have a wonderful day!\n")
                 break
@@ -292,18 +277,19 @@ def main():
         except KeyboardInterrupt:
             print("\n\n👋 Session interrupted. Goodbye!\n")
             break
+            
         except Exception as e:
             print(f"\n❌ Error: {e}\n")
 
 
 if __name__ == "__main__":
-    # Check if Ollama is running
+
     try:
         import requests
         response = requests.get("http://localhost:11434/api/tags", timeout=2)
         if response.status_code != 200:
-            print("⚠️  Warning: Ollama may not be running. Start it with: ollama serve")
+            print("checking ollama server")
     except:
-        print("⚠️  Warning: Cannot connect to Ollama. Make sure it's running: ollama serve")
+        print("can not connect to ollama server")
     
     main()
